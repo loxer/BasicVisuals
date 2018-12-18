@@ -137,7 +137,7 @@ public class GDM4 implements PlugInFilter {
                     }
 
                     if (methode == 3) // Overlay
-                    {
+                    {   //TODO richtiges Overlay (Subtraktiv/Additiv)
                         r = (rA + rB) / 2;
                         g = (gA + gB) / 2;
                         b = (bA + bB) / 2;
@@ -149,7 +149,7 @@ public class GDM4 implements PlugInFilter {
                     {
                         int temp = (int) (width * progress);
 
-                        if (x > temp)
+                        if (x >= temp)
                             // Wo befindet sich der aktuelle Pixel im Verhältnis zur Zeit?
                             // Je weiter rechts und je weiter links er ist, desto eher wird die else-Schleife ausgeführt
                         {
@@ -157,7 +157,7 @@ public class GDM4 implements PlugInFilter {
                             // Das erste Bild wird nach rechts geschoben, der Pixel im neuen Bild ist im BildA
                             // weiter links gewesen
                         } else {
-                            pixels_Erg[pos] = pixels_B[(int) (1 - progress) * width + pos];
+                            pixels_Erg[pos] = pixels_B[(int) pos + (width - temp)];
                             // je weiter der Progress vorangeschritten ist, desto weiter wandern die Pixel nach rechts
                         }
                     }
@@ -226,6 +226,5 @@ public class GDM4 implements PlugInFilter {
         // neues Bild anzeigen
         Erg.show();
         Erg.updateAndDraw();
-
     }
 }
