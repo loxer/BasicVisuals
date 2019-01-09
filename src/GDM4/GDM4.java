@@ -22,8 +22,8 @@ public class GDM4 implements PlugInFilter {
         ImageJ ij = new ImageJ(); // neue ImageJ Instanz starten und anzeigen
         ij.exitWhenQuitting(true);
 
-        IJ.open("E:\\workspace\\BasicVisuals\\Files\\StackB.zip");
-//      IJ.open("C:\\Users\\loxer\\Dropbox\\Eigene Dateien\\Documents\\Studium\\Grundlagen digitaler Medien\\Fiji.app\\images\\StackB.zip");
+//        IJ.open("E:\\workspace\\BasicVisuals\\Files\\StackB.zip");
+      IJ.open("C:\\Users\\loxer\\Dropbox\\Eigene Dateien\\Documents\\Studium\\Grundlagen digitaler Medien\\Fiji.app\\images\\StackB.zip");
 
         GDM4 sd = new GDM4();
         sd.imp = IJ.getImage();
