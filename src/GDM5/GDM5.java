@@ -25,135 +25,231 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 /**
- Opens an image window and adds a panel below the image
+ * Opens an image window and adds a panel below the image
  */
 public class GDM5 implements PlugIn {
 
-    ImagePlus imp; // ImagePlus object
-    private int[] origPixels;
-    private int width;
-    private int height;
+	ImagePlus imp; // ImagePlus object
+	private int[] origPixels;
+	private int width;
+	private int height;
 
-    String[] items = {"Original", "Filter 1"};
+	String[] items = { "Original", "Weich", "Hochpass", "Starke Kanten"};
 
+	public static void main(String args[]) {
 
-    public static void main(String args[]) {
+		IJ.open("C:\\Users\\loxer\\Dropbox\\Eigene Dateien\\Documents\\Studium\\Grundlagen digitaler Medien\\‹bung\\5\\sail.jpg");
+		// IJ.open("Z:/Pictures/Beispielbilder/orchid.jpg");
 
-        IJ.open("/users/barthel/applications/ImageJ/_images/bear.jpg");
-        //IJ.open("Z:/Pictures/Beispielbilder/orchid.jpg");
+		GDM5 pw = new GDM5();
+		pw.imp = IJ.getImage();
+		pw.run("");
+	}
 
-        GDM5 pw = new GDM5();
-        pw.imp = IJ.getImage();
-        pw.run("");
-    }
+	public void run(String arg) {
+		if (imp == null)
+			imp = WindowManager.getCurrentImage();
+		if (imp == null) {
+			return;
+		}
+		CustomCanvas cc = new CustomCanvas(imp);
 
-    public void run(String arg) {
-        if (imp==null)
-            imp = WindowManager.getCurrentImage();
-        if (imp==null) {
-            return;
-        }
-        CustomCanvas cc = new CustomCanvas(imp);
+		storePixelValues(imp.getProcessor());
 
-        storePixelValues(imp.getProcessor());
+		new CustomWindow(imp, cc);
+	}
 
-        new CustomWindow(imp, cc);
-    }
+	private void storePixelValues(ImageProcessor ip) {
+		width = ip.getWidth();
+		height = ip.getHeight();
 
+		origPixels = ((int[]) ip.getPixels()).clone();
+	}
 
-    private void storePixelValues(ImageProcessor ip) {
-        width = ip.getWidth();
-        height = ip.getHeight();
+	class CustomCanvas extends ImageCanvas {
 
-        origPixels = ((int []) ip.getPixels()).clone();
-    }
+		CustomCanvas(ImagePlus imp) {
+			super(imp);
+		}
 
+	} // CustomCanvas inner class
 
-    class CustomCanvas extends ImageCanvas {
+	class CustomWindow extends ImageWindow implements ItemListener {
 
-        CustomCanvas(ImagePlus imp) {
-            super(imp);
-        }
+		private String method;
 
-    } // CustomCanvas inner class
+		CustomWindow(ImagePlus imp, ImageCanvas ic) {
+			super(imp, ic);
+			addPanel();
+		}
 
+		void addPanel() {
+			// JPanel panel = new JPanel();
+			Panel panel = new Panel();
 
-    class CustomWindow extends ImageWindow implements ItemListener {
+			JComboBox cb = new JComboBox(items);
+			panel.add(cb);
+			cb.addItemListener(this);
 
-        private String method;
+			add(panel);
+			pack();
+		}
 
-        CustomWindow(ImagePlus imp, ImageCanvas ic) {
-            super(imp, ic);
-            addPanel();
-        }
+		public void itemStateChanged(ItemEvent evt) {
 
-        void addPanel() {
-            //JPanel panel = new JPanel();
-            Panel panel = new Panel();
+			// Get the affected item
+			Object item = evt.getItem();
 
-            JComboBox cb = new JComboBox(items);
-            panel.add(cb);
-            cb.addItemListener(this);
+			if (evt.getStateChange() == ItemEvent.SELECTED) {
+				System.out.println("Selected: " + item.toString());
+				method = item.toString();
+				changePixelValues(imp.getProcessor());
+				imp.updateAndDraw();
+			}
 
-            add(panel);
-            pack();
-        }
+		}
 
-        public void itemStateChanged(ItemEvent evt) {
+		private void changePixelValues(ImageProcessor ip) {
 
-            // Get the affected item
-            Object item = evt.getItem();
+			// Array zum Zur√ºckschreiben der Pixelwerte
+			int[] pixels = (int[]) ip.getPixels();
 
-            if (evt.getStateChange() == ItemEvent.SELECTED) {
-                System.out.println("Selected: " + item.toString());
-                method = item.toString();
-                changePixelValues(imp.getProcessor());
-                imp.updateAndDraw();
-            }
+			if (method.equals("Original")) {
 
-        }
+				for (int y = 0; y < height; y++) {
+					for (int x = 0; x < width; x++) {
+						int pos = y * width + x;
 
+						pixels[pos] = origPixels[pos];
+					}
+				}
+			}
 
-        private void changePixelValues(ImageProcessor ip) {
+			// Weichgezeichnetes Bild 3x3 Mittelwertfilter (1/9)
+			if (method.equals("Weich")) {
+				int[] weich = weich(pixels);
+				for (int y = 0; y < height; y++) {
+					for (int x = 0; x < width; x++) {
+						int pos = y * width + x;
+						pixels[pos] = weich[pos];
+					}
+				}
+			}
 
-            // Array zum Zur√É¬ºckschreiben der Pixelwerte
-            int[] pixels = (int[])ip.getPixels();
+			// Hochpassgefiltertes Bild
+			if (method.equals("Hochpass")) {
+				int[] weich = weich(pixels);
+				hochpass(weich, pixels);
+			}
 
-            if (method.equals("Original")) {
+			// Bild mit verst‰rkten Kanten oder Hochpass
+			if (method.equals("Starke Kanten")) {
 
-                for (int y=0; y<height; y++) {
-                    for (int x=0; x<width; x++) {
-                        int pos = y*width + x;
+				int[] weich = weich(pixels);
+				int[] hoch = hochpass(weich, pixels);
 
-                        pixels[pos] = origPixels[pos];
-                    }
-                }
-            }
+				for (int y = 0; y < height; y++) {
+					for (int x = 0; x < width; x++) {
+						int pos = y * width + x;
+						int argb = origPixels[pos]; // Lesen der Originalwerte
+						int hochCol = hoch[pos];
 
-            if (method.equals("Filter 1")) {
+						int r = (argb >> 16) & 0xff;
+						int g = (argb >> 8) & 0xff;
+						int b = argb & 0xff;
 
-                for (int y=0; y<height; y++) {
-                    for (int x=0; x<width; x++) {
-                        int pos = y*width + x;
-                        int argb = origPixels[pos];  // Lesen der Originalwerte
+						int rW = (hochCol >> 16) & 0xff;
+						int gW = (hochCol >> 8) & 0xff;
+						int bW = hochCol & 0xff;
 
-                        int r = (argb >> 16) & 0xff;
-                        int g = (argb >>  8) & 0xff;
-                        int b =  argb        & 0xff;
+						int rn = normalize(r + rW - 128);
+						int gn = normalize(g + gW - 128);
+						int bn = normalize(b + bW - 128);
 
-                        int rn = r/2;
-                        int gn = g/2;
-                        int bn = b/2;
+						pixels[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
+					}
+				}
+			}			
+		}
 
-                        pixels[pos] = (0xFF<<24) | (rn<<16) | (gn << 8) | bn;
-                    }
-                }
-            }
+		// um fehler zu vermeiden
+		private int normalize(int value) {
+			if (value > 255) {
+				return 255;
+			}
+			if (value < 0) {
+				return 0;
+			}
+			return value;
+		}
 
+		// returnt array mit tiefpassgefilterten pixeln
+		private int[] weich(int[] pixels) {
+			int[] weich = pixels;
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++) {
+					int pos = y * width + x;
 
+					int rn = 0;
+					int gn = 0;
+					int bn = 0;
 
-        }
+					for (int xN = -1; xN <= 1; xN++) {
+						for (int yN = -1; yN <= 1; yN++) {
+							int kernelPos = pos + yN + xN;
+							// auﬂerhalb des bildes springt auf andere seite
+							if (kernelPos < 0) {
+								kernelPos = pixels.length + kernelPos;
+							} else if (kernelPos >= pixels.length) {
+								kernelPos = kernelPos - pixels.length;
+							}
 
+							// 9er kernel speichern
+							int color = origPixels[kernelPos];
+							rn += (color >> 16) & 0xff;
+							gn += (color >> 8) & 0xff;
+							bn += color & 0xff;
+						}
+					}
 
-    } // CustomWindow inner class
+					// 1/9 da insgesamt 1 rauskommen soll
+					rn = normalize(rn / 9);
+					gn = normalize(gn / 9);
+					bn = normalize(bn / 9);
+
+					weich[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
+				}
+			}
+			return weich;
+		}
+
+		// returnt hochpass gefiltertes array
+		private int[] hochpass(int[] weich, int[] pixels) {
+
+			int[] hoch = pixels;
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++) {
+					int pos = y * width + x;
+					int argb = origPixels[pos]; // Lesen der Originalwerte
+					// verwendet weichgezeichnetes array
+					int weichCol = weich[pos];
+
+					int r = (argb >> 16) & 0xff;
+					int g = (argb >> 8) & 0xff;
+					int b = argb & 0xff;
+
+					int rW = (weichCol >> 16) & 0xff;
+					int gW = (weichCol >> 8) & 0xff;
+					int bW = weichCol & 0xff;
+
+					int rn = normalize(r - rW + 128);
+					int gn = normalize(g - gW + 128);
+					int bn = normalize(b - bW + 128);
+
+					hoch[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
+				}
+			}
+			return hoch;
+		}
+	} // CustomWindow inner class
 }
