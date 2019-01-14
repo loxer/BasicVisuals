@@ -127,7 +127,7 @@ public class GDM5 implements PlugIn {
 
 			// Weichgezeichnetes Bild 3x3 Mittelwertfilter (1/9)
 			if (method.equals("Weich")) {
-				int[] weich = weich(pixels);
+				int[] weich = soft(pixels);
 				for (int y = 0; y < height; y++) {
 					for (int x = 0; x < width; x++) {
 						int pos = y * width + x;
@@ -138,14 +138,14 @@ public class GDM5 implements PlugIn {
 
 			// Hochpassgefiltertes Bild
 			if (method.equals("Hochpass")) {
-				int[] weich = weich(pixels);
+				int[] weich = soft(pixels);
 				hochpass(weich, pixels);
 			}
 
 			// Bild mit verstärkten Kanten oder Hochpass
 			if (method.equals("Starke Kanten")) {
 
-				int[] weich = weich(pixels);
+				int[] weich = soft(pixels);
 				int[] hoch = hochpass(weich, pixels);
 
 				for (int y = 0; y < height; y++) {
@@ -162,9 +162,9 @@ public class GDM5 implements PlugIn {
 						int gW = (hochCol >> 8) & 0xff;
 						int bW = hochCol & 0xff;
 
-						int rn = normalize(r + rW - 128);
-						int gn = normalize(g + gW - 128);
-						int bn = normalize(b + bW - 128);
+						int rn = checkBoundaries(r + rW - 128);
+						int gn = checkBoundaries(g + gW - 128);
+						int bn = checkBoundaries(b + bW - 128);
 
 						pixels[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
 					}
@@ -173,7 +173,7 @@ public class GDM5 implements PlugIn {
 		}
 
 		// um fehler zu vermeiden
-		private int normalize(int value) {
+		private int checkBoundaries(int value) {
 			if (value > 255) {
 				return 255;
 			}
@@ -184,7 +184,7 @@ public class GDM5 implements PlugIn {
 		}
 
 		// returnt array mit tiefpassgefilterten pixeln
-		private int[] weich(int[] pixels) {
+		private int[] soft(int[] pixels) {
 			int[] weich = pixels;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
@@ -213,9 +213,9 @@ public class GDM5 implements PlugIn {
 					}
 
 					// 1/9 da insgesamt 1 rauskommen soll
-					rn = normalize(rn / 9);
-					gn = normalize(gn / 9);
-					bn = normalize(bn / 9);
+					rn = checkBoundaries(rn / 9);
+					gn = checkBoundaries(gn / 9);
+					bn = checkBoundaries(bn / 9);
 
 					weich[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
 				}
@@ -242,9 +242,9 @@ public class GDM5 implements PlugIn {
 					int gW = (weichCol >> 8) & 0xff;
 					int bW = weichCol & 0xff;
 
-					int rn = normalize(r - rW + 128);
-					int gn = normalize(g - gW + 128);
-					int bn = normalize(b - bW + 128);
+					int rn = checkBoundaries(r - rW + 128);
+					int gn = checkBoundaries(g - gW + 128);
+					int bn = checkBoundaries(b - bW + 128);
 
 					hoch[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
 				}
