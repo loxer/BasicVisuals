@@ -38,8 +38,8 @@ public class GDM5v2 implements PlugIn {
 
 	public static void main(String args[]) {
 
+//		IJ.open("C:\\Users\\loxer\\Dropbox\\Eigene Dateien\\Documents\\Studium\\Grundlagen digitaler Medien\\Übung\\5\\sail.jpg");
 		IJ.open("..\\Files\\sail.jpg");
-
 		GDM5v2 pw = new GDM5v2();
 		pw.imp = IJ.getImage();
 		pw.run("");
