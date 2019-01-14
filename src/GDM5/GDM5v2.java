@@ -1,28 +1,16 @@
 package GDM5;
 
 import ij.IJ;
-import ij.ImageJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
 import ij.plugin.PlugIn;
 import ij.process.ImageProcessor;
-
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridLayout;
 import java.awt.Panel;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-
-import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.border.TitledBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 /**
  * Opens an image window and adds a panel below the image
@@ -34,12 +22,13 @@ public class GDM5v2 implements PlugIn {
 	private int width;
 	private int height;
 
-	String[] items = { "Original", "Weich", "Hochpass", "Starke Kanten"};
+	String[] items = { "Original", "Lowpass", "Highpass", "Sharpener"};
 
 	public static void main(String args[]) {
 
-//		IJ.open("C:\\Users\\loxer\\Dropbox\\Eigene Dateien\\Documents\\Studium\\Grundlagen digitaler Medien\\‹bung\\5\\sail.jpg");
+		//IJ.open("C:\\Users\\loxer\\Dropbox\\Eigene Dateien\\Documents\\Studium\\Grundlagen digitaler Medien\\‹bung\\5\\sail.jpg");
 		IJ.open("..\\Files\\sail.jpg");
+
 		GDM5v2 pw = new GDM5v2();
 		pw.imp = IJ.getImage();
 		pw.run("");
@@ -108,9 +97,13 @@ public class GDM5v2 implements PlugIn {
 
 		}
 
+		/**
+		 * Change Pixel due to chosed event
+		 * @param ip
+		 */
 		private void changePixelValues(ImageProcessor ip) {
 
-			// Array zum Zur√ºckschreiben der Pixelwerte
+			// 1:1 duplicate Kernel 3x3
 			int[] pixels = (int[]) ip.getPixels();
 
 			if (method.equals("Original")) {
@@ -124,54 +117,53 @@ public class GDM5v2 implements PlugIn {
 				}
 			}
 
-			// Weichgezeichnetes Bild 3x3 Mittelwertfilter (1/9)
-			if (method.equals("Weich")) {
-				int[] weich = soft(pixels);
+			// #Lowpass-Kernel filtering 3x3 (1/9)
+			if (method.equals("Lowpass")) {
+				int[] soft = soft(pixels);
 				for (int y = 0; y < height; y++) {
 					for (int x = 0; x < width; x++) {
 						int pos = y * width + x;
-						pixels[pos] = weich[pos];
+						pixels[pos] = soft[pos];
 					}
 				}
 			}
 
-			// Hochpassgefiltertes Bild
-			if (method.equals("Hochpass")) {
-				int[] weich = soft(pixels);
-				hochpass(weich, pixels);
+			// #Higpass-Kernel filtering 3x3
+			if (method.equals("Highpass")) {
+				int[] soft = soft(pixels);
+				highpass(soft, pixels);
 			}
 
-			// Bild mit verst‰rkten Kanten oder Hochpass
-			if (method.equals("Starke Kanten")) {
+			// Sharpener-Kernel filter 3x3
+			if (method.equals("Sharpener")) {
 
-				int[] weich = soft(pixels);
-				int[] hoch = hochpass(weich, pixels);
+				int[] soft = soft(pixels);
+				int[] high = highpass(soft, pixels);
 
 				for (int y = 0; y < height; y++) {
 					for (int x = 0; x < width; x++) {
 						int pos = y * width + x;
-						int argb = origPixels[pos]; // Lesen der Originalwerte
-						int hochCol = hoch[pos];
+						int argb = origPixels[pos];
+						int highCol = high[pos];
 
 						int r = (argb >> 16) & 0xff;
 						int g = (argb >> 8) & 0xff;
 						int b = argb & 0xff;
 
-						int rW = (hochCol >> 16) & 0xff;
-						int gW = (hochCol >> 8) & 0xff;
-						int bW = hochCol & 0xff;
+						int rSoft = (highCol >> 16) & 0xff;
+						int gSoft = (highCol >> 8) & 0xff;
+						int bSoft = highCol & 0xff;
 
-						int rn = checkBoundaries(r + rW - 128);
-						int gn = checkBoundaries(g + gW - 128);
-						int bn = checkBoundaries(b + bW - 128);
+						// Formular: pxl + pxlSoft - 128
+						int rn = checkBoundaries(r + rSoft - 128);
+						int gn = checkBoundaries(g + gSoft - 128);
+						int bn = checkBoundaries(b + bSoft - 128);
 
 						pixels[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
 					}
 				}
 			}			
 		}
-
-		// um fehler zu vermeiden
 		private int checkBoundaries(int value) {
 			if (value > 255) {
 				return 255;
@@ -182,28 +174,33 @@ public class GDM5v2 implements PlugIn {
 			return value;
 		}
 
-		// returnt array mit tiefpassgefilterten pixeln
+		/**
+		 * Lowpass Filtering
+		 * 1. Initialize new pixels and set Up your Kernel (3x3)
+		 * 2. Write new pixels and divide them by KernelLenght^3 (3x3xß = 9)
+		 */
 		private int[] soft(int[] pixels) {
-			int[] weich = pixels;
+			int[] soft = pixels;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
-					int pos = y * width + x;
+					int pos = y * width + x; // pixel-count by rows
 
 					int rn = 0;
 					int gn = 0;
 					int bn = 0;
 
-					for (int xN = -1; xN <= 1; xN++) {
-						for (int yN = -1; yN <= 1; yN++) {
+					//3 pixel Kernel - the bigger the Kernel the softer the image
+					for (int xN = -1; xN <= 1; xN++) { // 3 rows  (-1 to 1)
+						for (int yN = -1; yN <= 1; yN++) { // 3 colums  (-1 to 1)
 							int kernelPos = pos + yN + xN;
-							// auﬂerhalb des bildes springt auf andere seite
+
+							// Jumps: last pxl (current row) > first pxl (next row)
 							if (kernelPos < 0) {
 								kernelPos = pixels.length + kernelPos;
 							} else if (kernelPos >= pixels.length) {
 								kernelPos = kernelPos - pixels.length;
 							}
 
-							// 9er kernel speichern
 							int color = origPixels[kernelPos];
 							rn += (color >> 16) & 0xff;
 							gn += (color >> 8) & 0xff;
@@ -211,44 +208,44 @@ public class GDM5v2 implements PlugIn {
 						}
 					}
 
-					// 1/9 da insgesamt 1 rauskommen soll
 					rn = checkBoundaries(rn / 9);
 					gn = checkBoundaries(gn / 9);
 					bn = checkBoundaries(bn / 9);
 
-					weich[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
+					soft[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
 				}
 			}
-			return weich;
+			return soft;
 		}
 
-		// returnt hochpass gefiltertes array
-		private int[] hochpass(int[] weich, int[] pixels) {
+		// Returns highpass array with new pixel values
+		private int[] highpass(int[] soft, int[] pixels) {
 
-			int[] hoch = pixels;
+			int[] high = pixels;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					int pos = y * width + x;
-					int argb = origPixels[pos]; // Lesen der Originalwerte
-					// verwendet weichgezeichnetes array
-					int weichCol = weich[pos];
+					int argb = origPixels[pos];
+					int softPxl = soft[pos];
 
 					int r = (argb >> 16) & 0xff;
 					int g = (argb >> 8) & 0xff;
 					int b = argb & 0xff;
 
-					int rW = (weichCol >> 16) & 0xff;
-					int gW = (weichCol >> 8) & 0xff;
-					int bW = weichCol & 0xff;
 
-					int rn = checkBoundaries(r - rW + 128);
-					int gn = checkBoundaries(g - gW + 128);
-					int bn = checkBoundaries(b - bW + 128);
+					int rS = (softPxl >> 16) & 0xff;
+					int gS = (softPxl >> 8) & 0xff;
+					int bS = softPxl & 0xff;
 
-					hoch[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
+					// Formular: pxl - pxlSoft +128
+					int rn = checkBoundaries(r - rS + 128);
+					int gn = checkBoundaries(g - gS + 128);
+					int bn = checkBoundaries(b - bS + 128);
+
+					high[pos] = (0xFF << 24) | (rn << 16) | (gn << 8) | bn;
 				}
 			}
-			return hoch;
+			return high;
 		}
 	} // CustomWindow inner class
 }
