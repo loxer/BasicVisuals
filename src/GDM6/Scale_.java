@@ -39,13 +39,15 @@ public class Scale_ implements PlugInFilter {
 
 		GenericDialog gd = new GenericDialog("scale");
 		gd.addChoice("Methode", dropdownmenue, dropdownmenue[2]);
-		gd.addNumericField("Hoehe:", 125, 0);
 		gd.addNumericField("Breite:", 115, 0);
+		gd.addNumericField("Hoehe:", 125, 0);
 
 		gd.showDialog();
 
+		
 		int width_n = (int) gd.getNextNumber(); // _n fuer das neue skalierte Bild
 		int height_n = (int) gd.getNextNumber();
+		
 
 		int width = ip.getWidth(); // Breite bestimmen
 		int height = ip.getHeight(); // Hoehe bestimmen
@@ -129,43 +131,43 @@ public class Scale_ implements PlugInFilter {
 						x = width - 1;
 					}
 
-					if (x_n == 100 && y_n == 100) {
-						System.out.println("Show yourself!");
-					}
-					
 					double r_n = 0;
 					double g_n = 0;
 					double b_n = 0;
 
-					for (int y_bilinear = (int) y; y_bilinear <= y_bilinear + 1; y++) {
-						for (int x_bilinear = (int) x; x_bilinear <= x_bilinear + 1; x++) {
+					for (int y_bilinear = (int) y; y_bilinear <= (int) y + 1; y_bilinear++) {
+						for (int x_bilinear = (int) x; x_bilinear <= (int) x + 1; x_bilinear++) {
+
+							// System.out.println()
 
 							// calculating factor of bilinear interpolation
 							// by considering the current position in the loop
 							double xCheck = 1;
-							double yCheck = 1;							
+							double yCheck = 1;
 
 							if (x_bilinear != (int) x) {
 								xCheck = 0;
-								if (x_n == 100 && y_n == 100) System.out.println("Show yourself!");
 							}
 
 							if (y_bilinear != (int) y) {
 								yCheck = 0;
-								if (x_n == 100 && y_n == 100) System.out.println("Show yourself!");
 							}
 
 							double factor = xCheck - (x - x_bilinear) + yCheck - (y - y_bilinear);
+							
+							if(x_n== 100 && y_n == 100) System.out.println("factor: " + factor);
 
 							// calculating position by considering the borders
 							int pos = 0;
 							if (y_bilinear >= height && x_bilinear >= width) { // check bottom right corner
 								pos = (y_bilinear - 2) * width + x_bilinear - 2;
-								System.out.println("Show yourself!");
+								System.out.println("Show bottom right! ");
 							} else if (y_bilinear >= height && x_bilinear < width) { // check bottom line
 								pos = (y_bilinear - 2) * width + x_bilinear;
+//								System.out.println("Show bottom line!");
 							} else if (y_bilinear < height && x_bilinear >= width) { // check right-hand side
 								pos = y_bilinear * width + x_bilinear - 2;
+								// System.out.println("Show right frame!" + x_bilinear);
 							} else {
 								pos = y_bilinear * width + x_bilinear;
 							}
