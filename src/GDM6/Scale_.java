@@ -10,6 +10,21 @@ import ij.process.ImageProcessor;
 
 public class Scale_ implements PlugInFilter {
 
+	ImagePlus imp; // ImagePlus object
+	
+	public static void main(String args[]) {
+
+		IJ.open("C:\\Users\\loxer\\Dropbox\\Eigene Dateien\\Documents\\Studium\\Grundlagen digitaler Medien\\Übung\\6\\component.jpg");
+		// IJ.open("Z:/Pictures/Beispielbilder/component.jpg");
+		
+		Scale_ pw = new Scale_();
+		pw.imp = IJ.getImage();
+		
+//		ImageProcessor ip = imp.getProcessor();
+		
+		pw.run(null);
+	}
+	
 	public int setup(String arg, ImagePlus imp) {
 		if (arg.equals("about"))
 		{showAbout(); return DONE;}
@@ -18,6 +33,8 @@ public class Scale_ implements PlugInFilter {
 	}
 
 	public void run(ImageProcessor ip) {
+		
+		ip = imp.getProcessor();
 
 		String[] dropdownmenue = {"Kopie", "Pixelwiederholung", "Bilinear"};
 
@@ -71,4 +88,5 @@ public class Scale_ implements PlugInFilter {
 		IJ.showMessage("");
 	}
 }
+
 
