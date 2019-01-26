@@ -95,13 +95,21 @@ public class Scale_ implements PlugInFilter {
 
 			for (int y_n = 0; y_n < height_n; y_n++) {
 				for (int x_n = 0; x_n < width_n; x_n++) {
+					
+					double y = Math.round(y_n * factorScaleHeight);
+					double x = Math.round(x_n * factorScaleWidth);
 
-					int y = (int) (y_n * factorScaleHeight);
-					int x = (int) (x_n * factorScaleWidth);
-
+					if (y >= height) {
+						y = height-1;
+					}
+					
+					if (x >= width) {
+						x = width-1;
+					}
+					
 					int pos_n = y_n * width_n + x_n;
-					int pos = y * width + x;
-
+					int pos = (int) (y * width + x);
+					
 					pix_n[pos_n] = pix[pos];
 				}
 			}
