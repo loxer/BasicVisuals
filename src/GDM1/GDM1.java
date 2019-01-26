@@ -448,6 +448,32 @@ public class GDM1 implements PlugIn {
 			}
 		}
 	}
+	
+	// von Prüfungsvorbereitung mit Herrn Prof. Bartel, funktioniert aber noch nicht^^
+	private void probeklausurAufgabe7error(int width, int height, int[] pixels) { 
+		
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				int pos = y * width + x;
+				
+				int b = (x-width/4) * 255/width/2;
+				int g = 255-b;
+				int r = g;
+				
+				if(b < 0) {
+					b = 0;
+					r = g = 255;
+				}
+				if (b > 255) {
+					b = 255;
+					r = g = 0;
+				}	
+				
+				pixels[pos] = 0xFF000000 | (r << 16) | (g << 8) | b;
+			}
+		}
+	}
+	
 
 	private void dialog() {
 		// Dialog fuer Auswahl der Bilderzeugung

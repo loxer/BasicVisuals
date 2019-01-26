@@ -228,20 +228,20 @@ public class GDM4 implements PlugInFilter {
 						pixels_Erg[pos] = 0xFF000000 + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 					}
 
-					if (methode == 7) {
+					if (methode == 7) // Probeklausur 10.1
+					{
 						if (x < y)
 							pixels_Erg[pos] = pixels_A[pos];
 						else
 							pixels_Erg[pos] = pixels_B[pos];
-
 					}
 
-					if (methode == 8) {
+					if (methode == 8) // Probeklausur 10.2
+					{
 						if (y > (z - 1) * (height - 1) / (length - 1))
 							pixels_Erg[pos] = pixels_B[pos];
 						else
 							pixels_Erg[pos] = pixels_A[pos];
-
 					}
 
 				}
