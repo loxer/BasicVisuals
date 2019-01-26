@@ -6,7 +6,6 @@ import ij.gui.GenericDialog;
 import ij.gui.NewImage;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
-import java.lang.Math.*;
 
 public class Scale_ implements PlugInFilter {
 
@@ -39,7 +38,7 @@ public class Scale_ implements PlugInFilter {
 		String[] dropdownmenue = { "Kopie", "Pixelwiederholung", "Bilinear" };
 
 		GenericDialog gd = new GenericDialog("scale");
-		gd.addChoice("Methode", dropdownmenue, dropdownmenue[1]);
+		gd.addChoice("Methode", dropdownmenue, dropdownmenue[2]);
 		gd.addNumericField("Hoehe:", 125, 0);
 		gd.addNumericField("Breite:", 115, 0);
 
@@ -87,6 +86,29 @@ public class Scale_ implements PlugInFilter {
 		}
 
 		if (chosenCheckbox.contains("current=Pixelwiederholung")) {
+			for (int y_n = 0; y_n < height_n; y_n++) {
+				for (int x_n = 0; x_n < width_n; x_n++) {
+
+					double y = Math.round(y_n * factorScaleHeight);
+					double x = Math.round(x_n * factorScaleWidth);
+
+					if (y >= height) {
+						y = height - 1;
+					}
+
+					if (x >= width) {
+						x = width - 1;
+					}
+
+					int pos_n = y_n * width_n + x_n;
+					int pos = (int) (y * width + x);
+
+					pix_n[pos_n] = pix[pos];
+				}
+			}
+		}
+
+		if (chosenCheckbox.contains("current=Bilinear")) {
 
 			System.out.println("FactorScaleWidth: 	" + factorScaleWidth);
 			System.out.println("FactorScaleHeight: 	" + factorScaleHeight);
@@ -95,30 +117,88 @@ public class Scale_ implements PlugInFilter {
 
 			for (int y_n = 0; y_n < height_n; y_n++) {
 				for (int x_n = 0; x_n < width_n; x_n++) {
-					
+
 					double y = Math.round(y_n * factorScaleHeight);
 					double x = Math.round(x_n * factorScaleWidth);
 
 					if (y >= height) {
-						y = height-1;
+						y = height - 1;
 					}
-					
+
 					if (x >= width) {
-						x = width-1;
+						x = width - 1;
+					}
+
+					if (x_n == 100 && y_n == 100) {
+						System.out.println("Show yourself!");
 					}
 					
+					double r_n = 0;
+					double g_n = 0;
+					double b_n = 0;
+
+					for (int y_bilinear = (int) y; y_bilinear <= y_bilinear + 1; y++) {
+						for (int x_bilinear = (int) x; x_bilinear <= x_bilinear + 1; x++) {
+
+							// calculating factor of bilinear interpolation
+							// by considering the current position in the loop
+							double xCheck = 1;
+							double yCheck = 1;							
+
+							if (x_bilinear != (int) x) {
+								xCheck = 0;
+								if (x_n == 100 && y_n == 100) System.out.println("Show yourself!");
+							}
+
+							if (y_bilinear != (int) y) {
+								yCheck = 0;
+								if (x_n == 100 && y_n == 100) System.out.println("Show yourself!");
+							}
+
+							double factor = xCheck - (x - x_bilinear) + yCheck - (y - y_bilinear);
+
+							// calculating position by considering the borders
+							int pos = 0;
+							if (y_bilinear >= height && x_bilinear >= width) { // check bottom right corner
+								pos = (y_bilinear - 2) * width + x_bilinear - 2;
+								System.out.println("Show yourself!");
+							} else if (y_bilinear >= height && x_bilinear < width) { // check bottom line
+								pos = (y_bilinear - 2) * width + x_bilinear;
+							} else if (y_bilinear < height && x_bilinear >= width) { // check right-hand side
+								pos = y_bilinear * width + x_bilinear - 2;
+							} else {
+								pos = y_bilinear * width + x_bilinear;
+							}
+
+							int argb = pix[pos];
+
+							int r = (argb >> 16) & 0xff;
+							int g = (argb >> 8) & 0xff;
+							int b = argb & 0xff;
+
+							r_n += r * factor;
+							g_n += g * factor;
+							b_n += b * factor;
+						}
+					}
+
 					int pos_n = y_n * width_n + x_n;
-					int pos = (int) (y * width + x);
-					
-					pix_n[pos_n] = pix[pos];
+					int r = normalize(r_n);
+					int g = normalize(g_n);
+					int b = normalize(b_n);
+
+					pix_n[pos_n] = (0xFF << 24) | (r << 16) | (g << 8) | (int) b;
 				}
 			}
 		}
-
-		if (chosenCheckbox.contains("current=Bilinear")) {
-
-		}
 		displayNewPicture();
+	}
+
+	private int normalize(double value) {
+		if (value > 255) {
+			return 255;
+		}
+		return (int) value;
 	}
 
 	void displayNewPicture() {
