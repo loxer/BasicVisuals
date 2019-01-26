@@ -6,10 +6,12 @@ import ij.gui.GenericDialog;
 import ij.gui.NewImage;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
+import java.lang.Math.*;
 
 public class Scale_ implements PlugInFilter {
 
 	ImagePlus imp; // ImagePlus object
+	ImagePlus neu; // new Picture
 
 	public static void main(String args[]) {
 
@@ -37,22 +39,25 @@ public class Scale_ implements PlugInFilter {
 		String[] dropdownmenue = { "Kopie", "Pixelwiederholung", "Bilinear" };
 
 		GenericDialog gd = new GenericDialog("scale");
-		gd.addChoice("Methode", dropdownmenue, dropdownmenue[0]);
-		gd.addNumericField("Hoehe:", 500, 0);
-		gd.addNumericField("Breite:", 400, 0);
+		gd.addChoice("Methode", dropdownmenue, dropdownmenue[1]);
+		gd.addNumericField("Hoehe:", 125, 0);
+		gd.addNumericField("Breite:", 115, 0);
 
 		gd.showDialog();
 
-		int height_n = (int) gd.getNextNumber(); // _n fuer das neue skalierte Bild
-		int width_n = (int) gd.getNextNumber();
+		int width_n = (int) gd.getNextNumber(); // _n fuer das neue skalierte Bild
+		int height_n = (int) gd.getNextNumber();
 
 		int width = ip.getWidth(); // Breite bestimmen
 		int height = ip.getHeight(); // Hoehe bestimmen
 
+		double factorScaleWidth = (double) width / width_n;
+		double factorScaleHeight = (double) height / height_n;
+
 		// height_n = height;
 		// width_n = width;
 
-		ImagePlus neu = NewImage.createRGBImage("Skaliertes Bild", width_n, height_n, 1, NewImage.FILL_BLACK);
+		neu = NewImage.createRGBImage("Skaliertes Bild", width_n, height_n, 1, NewImage.FILL_BLACK);
 
 		ImageProcessor ip_n = neu.getProcessor();
 
@@ -60,15 +65,14 @@ public class Scale_ implements PlugInFilter {
 		int[] pix_n = (int[]) ip_n.getPixels();
 		String chosenCheckbox = gd.getChoices().toString();
 
-		// System.out.println("pix_n: " + pix_n.length);
-//		System.out.println("Methode: " + gd.getChoices());
+		// System.out.println("Methode: " + gd.getChoices());
 
 		// Schleife ueber das neue Bild
-		for (int y_n = 0; y_n < height_n; y_n++) {
-			for (int x_n = 0; x_n < width_n; x_n++) {
 
-				
-				if (chosenCheckbox.contains("current=Kopie")) {
+		if (chosenCheckbox.contains("current=Kopie")) {
+			for (int y_n = 0; y_n < height_n; y_n++) {
+				for (int x_n = 0; x_n < width_n; x_n++) {
+
 					int y = y_n;
 					int x = x_n;
 
@@ -79,21 +83,37 @@ public class Scale_ implements PlugInFilter {
 						pix_n[pos_n] = pix[pos];
 					}
 				}
-				
-				if (chosenCheckbox.contains("current=Pixelwiederholung")) {
-					
-					
-					
-				}
-				
-				if (chosenCheckbox.contains("current=Bilinear")) {
-					
-				}
-				
 			}
 		}
 
-		// neues Bild anzeigen
+		if (chosenCheckbox.contains("current=Pixelwiederholung")) {
+
+			System.out.println("FactorScaleWidth: 	" + factorScaleWidth);
+			System.out.println("FactorScaleHeight: 	" + factorScaleHeight);
+			System.out.println("pix: 			" + pix.length);
+			System.out.println("pix_n:  		" + pix_n.length);
+
+			for (int y_n = 0; y_n < height_n; y_n++) {
+				for (int x_n = 0; x_n < width_n; x_n++) {
+
+					int y = (int) (y_n * factorScaleHeight);
+					int x = (int) (x_n * factorScaleWidth);
+
+					int pos_n = y_n * width_n + x_n;
+					int pos = y * width + x;
+
+					pix_n[pos_n] = pix[pos];
+				}
+			}
+		}
+
+		if (chosenCheckbox.contains("current=Bilinear")) {
+
+		}
+		displayNewPicture();
+	}
+
+	void displayNewPicture() {
 		neu.show();
 		neu.updateAndDraw();
 	}
